@@ -1,5 +1,22 @@
 import geopandas as gpd
 from shapely.geometry import Polygon
+from shapely.affinity import translate
+
+def translate_buildings(buildings, translations):
+    """
+    Translate building polygons to new positions.
+
+    Args:
+        buildings (list of Polygon): List of building footprints.
+        translations (list of tuple): List of (x_offset, y_offset) for each building.
+
+    Returns:
+        list of Polygon: Translated building footprints.
+    """
+    translated_buildings = []
+    for building, (x_offset, y_offset) in zip(buildings, translations):
+        translated_buildings.append(translate(building, xoff=x_offset, yoff=y_offset))
+    return translated_buildings
 
 def create_sample_data():
     """
@@ -11,14 +28,20 @@ def create_sample_data():
     # Simulate some polygons (buildings)
     polygons = [
         Polygon([[0, 0], [0, 1], [1, 1], [1, 0], [0, 0]]),  # Square building
-        Polygon([[1, 1], [1, 2], [2, 2], [2, 1], [1, 1]]),  # Square building
-        Polygon([[2, 0], [2, 3], [3, 3], [3, 0], [2, 0]])   # Rectangle building
+        Polygon([[0, 0], [0, 1], [1, 1], [1, 0], [0, 0]]),  # Square building
+        Polygon([[0, 0], [0, 1], [1, 1], [1, 0], [0, 0]])   # Square building
     ]
+
+    # Define translations for each building
+    translations = [(0, 0), (3, 0), (6, 0)]  # Move buildings along the x-axis
+
+    # Translate buildings to their new positions
+    translated_polygons = translate_buildings(polygons, translations)
 
     # Create a GeoDataFrame
     gdf = gpd.GeoDataFrame(
         {"building_id": [1, 2, 3]},  # Example IDs
-        geometry=polygons,
+        geometry=translated_polygons,
         crs="EPSG:4326"  # Set CRS to WGS84
     )
 

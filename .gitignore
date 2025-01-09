@@ -1,0 +1,15 @@
+# Ignore virtual environments
+venv/
+.env/
+geo_env/
+.DS_Store
+
+# Ignore cache and temporary files
+__pycache__/
+cache/
+*.pyc
+*.pyo
+*.log
+
+# Ignore data files
+data/*.geojson

@@ -1,13 +1,17 @@
 import geopandas as gpd
 import random
-from fetch_data import create_sample_data, save_to_file
+from fetch_data import create_sample_data, save_to_file, fetch_building_data_with_heights
 from calculate_shade import project_shadow, load_buildings, calculate_sun_position
 from visualize import visualize_with_sun_3d  
-
+import time
+from tqdm import tqdm
+"""
 def main():
-    """
+    
     Main function to run the shade simulation pipeline.
-    """
+"""
+    
+'''
     # Step 1: Generate sample building dat
     print("Generating sample building data...")
     gdf = create_sample_data()
@@ -24,6 +28,8 @@ def main():
     heights = [random.randint(5, 20) for _ in range(len(buildings))]
     buildings["height"] = heights  # Add heights as a column
     print(f"Building heights: {heights}")
+   
+
 
     # Step 4: Calculate shadows for each building
     print("Calculating shadows...")
@@ -55,6 +61,52 @@ def main():
     # Pass the dynamically calculated sun_position
     visualize_with_sun_3d(buildings["geometry"], heights, shadows, sun_position)
     print("Visualization complete.")
+
+if __name__ == "__main__":
+    main()
+ '''
+
+from fetch_data import fetch_building_data_with_heights, save_to_file
+from calculate_shade import project_shadow
+from visualize import visualize_with_sun_3d
+
+from fetch_data import fetch_building_data_with_heights
+from calculate_shade import project_shadow
+from visualize import visualize_with_sun_3d
+
+def main():
+    # Step 1: Fetch real-world building data
+    place_name = "Hartford, Connecticut, USA"
+    print(f"Fetching building data for {place_name}...")
+    buildings_gdf = fetch_building_data_with_heights(place_name)
+    if buildings_gdf is None:
+        print("Failed to fetch building data. Exiting.")
+        return
+
+    print(f"Number of buildings fetched: {len(buildings_gdf)}")
+    print(buildings_gdf.head())  # Inspect the first few rows
+    print(f"Number of valid geometries: {buildings_gdf.is_valid.sum()} / {len(buildings_gdf)}")
+
+    # Step 2: Calculate shadows for each building
+    print("Calculating shadows...")
+    shadows = []
+    heights = []
+    for _, row in buildings_gdf.iterrows():
+        building = row["geometry"]
+        height = row["height"]
+        shadow = project_shadow(building, height=height, sun_azimuth=135, sun_altitude=45)
+        shadows.append(shadow)
+        heights.append(height)
+    print(f"Number of buildings processed for shadows: {len(buildings_gdf['geometry'])}")
+    print(f"Number of shadows generated: {len(shadows)}")
+
+    # Step 3: Visualize buildings, shadows, and sun position
+    print(f"Preparing to visualize {len(buildings_gdf['geometry'])} buildings and {len(shadows)} shadows.")
+    visualize_with_sun_3d(buildings_gdf["geometry"], heights, shadows, sun_position=(10, -10, 50))
+    print("Visualization complete.")
+
+    
+
 
 if __name__ == "__main__":
     main()

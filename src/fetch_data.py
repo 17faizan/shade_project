@@ -1,6 +1,62 @@
 import geopandas as gpd
 from shapely.geometry import Polygon
 from shapely.affinity import translate
+import osmnx as ox
+import time
+
+
+import pandas as pd
+import random
+
+def fetch_building_data_with_heights(place_name, max_features=None, simplify_tolerance=0.001):
+    """
+    Fetch building geometries for a given place name, assign heights, and simplify geometry.
+
+    Args:
+        place_name (str): The name of the place to fetch data for.
+        max_features (int, optional): Limit the number of buildings processed.
+        simplify_tolerance (float, optional): Tolerance for simplifying geometries.
+
+    Returns:
+        GeoDataFrame: Filtered building geometries with heights.
+    """
+    print(f"Fetching building data for {place_name}...")
+    start_time = time.time()
+    try:
+        tags = {"building": True}
+        gdf = ox.features_from_place(place_name, tags)
+        print(f"Features fetched successfully in {time.time() - start_time:.2f} seconds.")
+
+        # Filter for Polygon or MultiPolygon geometries
+        buildings_gdf = gdf[gdf.geom_type.isin(["Polygon", "MultiPolygon"])]
+
+        # Limit the number of buildings for testing
+        if max_features:
+            buildings_gdf = buildings_gdf.head(max_features)
+            print(f"Subset of {max_features} features selected.")
+
+        # Simplify geometries for performance
+        buildings_gdf["geometry"] = buildings_gdf["geometry"].simplify(simplify_tolerance)
+        print(f"Geometries simplified with tolerance {simplify_tolerance}.")
+
+        # Assign heights
+        if 'height' in buildings_gdf.columns:
+            print("Height data found in the dataset.")
+            buildings_gdf['height'] = pd.to_numeric(buildings_gdf['height'], errors='coerce').fillna(10)
+        else:
+            print("No height data available. Assigning default/random heights.")
+            buildings_gdf['height'] = buildings_gdf.apply(lambda _: random.randint(5, 20), axis=1)
+
+        # Save to a GeoJSON file
+        buildings_gdf.to_file("data/filtered_buildings.geojson", driver="GeoJSON")
+        print(f"Filtered building data saved to 'data/filtered_buildings.geojson'.")
+        return buildings_gdf
+
+    except Exception as e:
+        print(f"Error fetching building data: {e}")
+        return None
+
+
 
 def translate_buildings(buildings, translations):
     """
